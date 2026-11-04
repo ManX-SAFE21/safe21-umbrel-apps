@@ -1,0 +1,63 @@
+manifestVersion: 1
+id: safe21-will-executor
+category: bitcoin
+name: Will Executor
+version: "0.3.2-umbrel.3"
+tagline: Broadcast pre-signed Bitcoin transactions when their locktime arrives
+icon: https://raw.githubusercontent.com/ManX-SAFE21/safe21-umbrel-apps/main/safe21-will-executor/icon.svg
+description: >-
+  A Will Executor for Bitcoin After Life inheritance plans. Wallets such as
+  the Bitcoin After Life plugin for Electrum send it transactions that are
+  already signed but locked until a future block height or date. The Will
+  Executor stores them and broadcasts each one through your own Bitcoin node
+  as soon as its locktime is reached.
+
+
+  The app never holds keys: it only keeps signed transactions and releases
+  them at the right time. A small fee output to your payout address,
+  configurable from the dashboard, is required for a transaction to be
+  accepted.
+
+
+  Features:
+
+  - Dashboard with transaction statistics, search by txid, settings, backup
+  and restore. It opens behind the Umbrel login.
+
+  - Follows new blocks over ZMQ and talks to Bitcoin Core with cookie
+  authentication: no RPC password is handed to the app.
+
+  - Weekly automatic backups of the database inside the app's data folder.
+
+  - Optional public page through a Cloudflare tunnel pointed at
+  http://safe21-will-executor_ui_1:80. Settings, backup and restore are
+  always refused on the tunnel and on Tor.
+
+  - Optional listing on the Bitcoin After Life welist: create
+  app-data/safe21-will-executor/data/app.env with BAL_SEND_STATS=true and
+  BAL_PUBLIC_URL=https://your-domain, then restart the app.
+
+
+  This version serves Bitcoin mainnet only.
+developer: SAFE21
+website: https://we.safe21.io
+dependencies:
+  - bitcoin
+repo: https://github.com/ManX-SAFE21/BAL_Will-Executor_Umbrel
+support: https://github.com/ManX-SAFE21/BAL_Will-Executor_Umbrel/issues
+port: 9145
+gallery:
+  - https://files.catbox.moe/p8hqd5.png
+  - https://files.catbox.moe/z7yt3h.png
+  - https://files.catbox.moe/207y06.png
+  - https://files.catbox.moe/lxkrsf.png
+  - https://files.catbox.moe/du3ea5.png
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+releaseNotes: >-
+  First release from the SAFE21 app store. Images are prebuilt for amd64 and
+  arm64 (Raspberry Pi), Tor access goes through the Umbrel login, and the
+  admin endpoints are refused on any Cloudflare tunnel, whatever its domain.
+submitter: SAFE21
+submission: ""

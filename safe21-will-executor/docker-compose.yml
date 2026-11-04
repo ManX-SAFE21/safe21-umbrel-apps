@@ -1,0 +1,103 @@
+version: "3.7"
+
+# Bitcoin After Life Will Executor — App Store build (mainnet only).
+#
+# umbreld merges this file with its own fragments: app_proxy (the Umbrel login
+# in front of APP_HOST), tor_server (the onion service, also behind the login)
+# and a common file that makes umbrel_main_network the "default" network.
+# The images are built by GitHub Actions in ManX-SAFE21/BAL_Will-Executor_Umbrel
+# for amd64 and arm64; Umbrel only pulls them.
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: safe21-will-executor_ui_1
+      APP_PORT: 80
+
+  # HTTP API (Rust), port 9137 on the app's internal network only.
+  server:
+    image: ghcr.io/manx-safe21/bal-will-executor:0.3.2-umbrel.3
+    restart: on-failure
+    stop_grace_period: 30s
+    command: ["/scripts/entrypoint-server.sh"]
+    environment:
+      BAL_SERVER_DB_FILE: /data/bal.db
+      BAL_SERVER_PUB_KEY_PATH: /data/keys/public_key.pem
+      BAL_SERVER_BIND_ADDRESS: 0.0.0.0
+      BAL_SERVER_BIND_PORT: "9137"
+      # Payout address and fee are set from the dashboard (Settings), which
+      # stores them in data/settings.json; these are only the first-run values.
+      BAL_SERVER_BITCOIN_ADDRESS: ""
+      BAL_SERVER_BITCOIN_FIXED_FEE: "50000"
+      BAL_SERVER_EXPOSE_STATS: "true"
+      RUST_LOG: info
+    volumes:
+      - ${APP_DATA_DIR}/data:/data
+    networks:
+      internal:
+        # ui/nginx.conf proxies to "bal-server".
+        aliases:
+          - bal-server
+
+  # Block watcher (Rust): follows new blocks over ZMQ and broadcasts the
+  # transactions whose locktime has been reached.
+  pusher:
+    image: ghcr.io/manx-safe21/bal-will-executor:0.3.2-umbrel.3
+    restart: on-failure
+    stop_grace_period: 30s
+    depends_on:
+      - server
+    command: ["/scripts/entrypoint-pusher.sh"]
+    environment:
+      BAL_PUSHER_DB_FILE: /data/bal.db
+      BAL_PUSHER_NETWORK: bitcoin
+      APP_BITCOIN_NODE_IP: $APP_BITCOIN_NODE_IP
+      APP_BITCOIN_RPC_PORT: $APP_BITCOIN_RPC_PORT
+      APP_BITCOIN_DATA_DIR: /bitcoin-data
+      BAL_ZMQ_PORT: ${APP_BITCOIN_ZMQ_HASHBLOCK_PORT:-28334}
+      BAL_PUSHER_BITCOIN_HOST: http://$APP_BITCOIN_NODE_IP
+      BAL_PUSHER_BITCOIN_PORT: $APP_BITCOIN_RPC_PORT
+      # Cookie authentication: no RPC password is handed to this app.
+      BAL_PUSHER_BITCOIN_COOKIE_FILE: /bitcoin-data/.cookie
+      BAL_PUSHER_BITCOIN_ZMQ_HASHBLOCK: tcp://$APP_BITCOIN_NODE_IP:${APP_BITCOIN_ZMQ_HASHBLOCK_PORT:-28334}
+      SSL_KEY_PATH: /data/keys/private_key.pem
+      # Reporting to the welist aggregator is off until the operator turns it
+      # on in data/app.env (BAL_SEND_STATS=true, BAL_PUBLIC_URL=https://...).
+      BAL_PUSHER_SEND_STATS: "false"
+      BAL_SERVER_URL: ""
+      RUST_LOG: info
+    volumes:
+      - ${APP_DATA_DIR}/data:/data
+      - ${APP_BITCOIN_DATA_DIR}:/bitcoin-data:ro
+    networks:
+      default:
+      internal:
+      # IPv6 bridge: welist.bitcoin-after.life is reachable over IPv6 only
+      # from the Umbrel network. Docker NATs this ULA range.
+      bal-v6:
+
+  # Nginx dashboard. Reached by app_proxy (Umbrel login) and, for a public
+  # read-only page, by a Cloudflare tunnel pointed at
+  # http://safe21-will-executor_ui_1:80 (admin endpoints are refused there).
+  ui:
+    image: ghcr.io/manx-safe21/bal-will-executor-ui:0.3.2-umbrel.3
+    restart: on-failure
+    depends_on:
+      - server
+    environment:
+      TOR_ADDRESS: $APP_HIDDEN_SERVICE
+    volumes:
+      - ${APP_DATA_DIR}/data:/app-data:ro
+    networks:
+      default:
+      internal:
+
+networks:
+  internal:
+    driver: bridge
+  bal-v6:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: fd00:ba1:e22::/64

@@ -2,7 +2,7 @@ manifestVersion: 1
 id: safe21-will-executor
 category: bitcoin
 name: Will Executor
-version: "0.3.2-umbrel.3"
+version: "0.3.2-umbrel.4"
 tagline: Broadcast pre-signed Bitcoin transactions when their locktime arrives
 icon: https://raw.githubusercontent.com/ManX-SAFE21/safe21-umbrel-apps/main/safe21-will-executor/icon.svg
 description: >-
@@ -47,17 +47,17 @@ repo: https://github.com/ManX-SAFE21/BAL_Will-Executor_Umbrel
 support: https://github.com/ManX-SAFE21/BAL_Will-Executor_Umbrel/issues
 port: 9145
 gallery:
-  - https://files.catbox.moe/p8hqd5.png
-  - https://files.catbox.moe/z7yt3h.png
-  - https://files.catbox.moe/207y06.png
-  - https://files.catbox.moe/lxkrsf.png
-  - https://files.catbox.moe/du3ea5.png
+  - https://raw.githubusercontent.com/ManX-SAFE21/safe21-umbrel-apps/main/safe21-will-executor/gallery/dashboard.png
+  - https://raw.githubusercontent.com/ManX-SAFE21/safe21-umbrel-apps/main/safe21-will-executor/gallery/transactions.png
+  - https://raw.githubusercontent.com/ManX-SAFE21/safe21-umbrel-apps/main/safe21-will-executor/gallery/submit.png
+  - https://raw.githubusercontent.com/ManX-SAFE21/safe21-umbrel-apps/main/safe21-will-executor/gallery/settings.png
+  - https://raw.githubusercontent.com/ManX-SAFE21/safe21-umbrel-apps/main/safe21-will-executor/gallery/backup.png
 path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  First release from the SAFE21 app store. Images are prebuilt for amd64 and
-  arm64 (Raspberry Pi), Tor access goes through the Umbrel login, and the
-  admin endpoints are refused on any Cloudflare tunnel, whatever its domain.
+  data/app.env can now also carry the payout address and fee of a test network
+  (for example BAL_SERVER_TESTNET4_ADDRESS and BAL_SERVER_TESTNET4_FIXED_FEE)
+  served by a pusher running outside the app. Screenshots added.
 submitter: SAFE21
 submission: ""

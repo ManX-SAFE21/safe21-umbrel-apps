@@ -16,8 +16,11 @@ services:
 
   # HTTP API (Rust), port 9137 on the app's internal network only.
   server:
-    image: ghcr.io/manx-safe21/bal-will-executor:0.3.2-umbrel.4@sha256:96f04e4eb9e9dd4ee61b3d7d92605b28f9f316c8589dc4e84d429333dd869ca6
-    restart: on-failure
+    image: ghcr.io/manx-safe21/bal-will-executor:0.3.2-umbrel.5@sha256:fd287d07a05b26a67400fe8f786096e9185bac3ba718554ad770569f712fcb20
+    # unless-stopped, not on-failure: the dashboard's "Restart server now"
+    # applies new settings by exiting with status 0, and on-failure would
+    # leave the server down.
+    restart: unless-stopped
     stop_grace_period: 30s
     command: ["/scripts/entrypoint-server.sh"]
     environment:
@@ -42,7 +45,7 @@ services:
   # Block watcher (Rust): follows new blocks over ZMQ and broadcasts the
   # transactions whose locktime has been reached.
   pusher:
-    image: ghcr.io/manx-safe21/bal-will-executor:0.3.2-umbrel.4@sha256:96f04e4eb9e9dd4ee61b3d7d92605b28f9f316c8589dc4e84d429333dd869ca6
+    image: ghcr.io/manx-safe21/bal-will-executor:0.3.2-umbrel.5@sha256:fd287d07a05b26a67400fe8f786096e9185bac3ba718554ad770569f712fcb20
     restart: on-failure
     stop_grace_period: 30s
     depends_on:
@@ -80,7 +83,7 @@ services:
   # read-only page, by a Cloudflare tunnel pointed at
   # http://safe21-will-executor_ui_1:80 (admin endpoints are refused there).
   ui:
-    image: ghcr.io/manx-safe21/bal-will-executor-ui:0.3.2-umbrel.4@sha256:012821352863f107b6639d004b0685162ce00f0165d9204e8fc7e6af72832422
+    image: ghcr.io/manx-safe21/bal-will-executor-ui:0.3.2-umbrel.5@sha256:508a8568e569710b010ab3f351e418c14d920f1d4a12570c4bc6e19acc83c13f
     restart: on-failure
     depends_on:
       - server

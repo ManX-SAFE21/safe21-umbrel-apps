@@ -14,6 +14,9 @@ Apps by SAFE21 for [umbrelOS](https://umbrel.com).
 
 4. Open the **SAFE21** store and install the app.
 
+Step-by-step guide (Italian) for a Raspberry Pi:
+[guide/raspberry-pi.md](guide/raspberry-pi.md).
+
 ## Apps
 
 | App | What it does |

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 200" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="880" height="200" rx="16" fill="#0f172a"/>
+  <g font-size="14" text-anchor="middle">
+    <rect x="20"  y="50" width="150" height="100" rx="12" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+    <text x="95" y="82" fill="#38bdf8" font-size="26" font-weight="700">1</text>
+    <text x="95" y="108" fill="#e2e8f0" font-weight="700">umbrelOS</text>
+    <text x="95" y="128" fill="#94a3b8">sulla scheda</text>
+
+    <rect x="195" y="50" width="150" height="100" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+    <text x="270" y="82" fill="#f59e0b" font-size="26" font-weight="700">2</text>
+    <text x="270" y="108" fill="#e2e8f0" font-weight="700">Bitcoin Node</text>
+    <text x="270" y="128" fill="#94a3b8">sincronizza (giorni)</text>
+
+    <rect x="370" y="50" width="150" height="100" rx="12" fill="#1e293b" stroke="#a78bfa" stroke-width="2"/>
+    <text x="445" y="82" fill="#a78bfa" font-size="26" font-weight="700">3</text>
+    <text x="445" y="108" fill="#e2e8f0" font-weight="700">Store SAFE21</text>
+    <text x="445" y="128" fill="#94a3b8">aggiungi il link</text>
+
+    <rect x="545" y="50" width="150" height="100" rx="12" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+    <text x="620" y="82" fill="#22c55e" font-size="26" font-weight="700">4</text>
+    <text x="620" y="108" fill="#e2e8f0" font-weight="700">Will Executor</text>
+    <text x="620" y="128" fill="#94a3b8">installa</text>
+
+    <rect x="720" y="50" width="140" height="100" rx="12" fill="#1e293b" stroke="#f43f5e" stroke-width="2"/>
+    <text x="790" y="82" fill="#f43f5e" font-size="26" font-weight="700">5</text>
+    <text x="790" y="108" fill="#e2e8f0" font-weight="700">Settings</text>
+    <text x="790" y="128" fill="#94a3b8">indirizzo e fee</text>
+  </g>
+  <g stroke="#64748b" stroke-width="2" fill="#64748b">
+    <line x1="170" y1="100" x2="190" y2="100"/><polygon points="190,95 195,100 190,105"/>
+    <line x1="345" y1="100" x2="365" y2="100"/><polygon points="365,95 370,100 365,105"/>
+    <line x1="520" y1="100" x2="540" y2="100"/><polygon points="540,95 545,100 540,105"/>
+    <line x1="695" y1="100" x2="715" y2="100"/><polygon points="715,95 720,100 715,105"/>
+  </g>
+</svg>

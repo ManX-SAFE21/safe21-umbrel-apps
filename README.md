@@ -19,6 +19,7 @@ Apps by SAFE21 for [umbrelOS](https://umbrel.com).
 | App | What it does |
 |---|---|
 | **Will Executor** (`safe21-will-executor`) | Stores pre-signed Bitcoin transactions with a future locktime and broadcasts them through your node when the time comes. Requires the Bitcoin Node app. Mainnet only. |
+| **Will Executor Testnet4** (`safe21-will-executor-testnet4`) | Optional companion: adds Bitcoin testnet4 (its own testnet4 node and watcher) to the Will Executor. Requires the Will Executor app. |
 
 The Will Executor's source code and Docker image builds live in
 [ManX-SAFE21/BAL_Will-Executor_Umbrel](https://github.com/ManX-SAFE21/BAL_Will-Executor_Umbrel).

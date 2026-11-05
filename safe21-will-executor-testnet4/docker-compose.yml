@@ -1,0 +1,113 @@
+version: "3.7"
+
+# Will Executor Testnet4 — companion of safe21-will-executor.
+#
+# Adds Bitcoin testnet4 to the Will Executor: a Bitcoin Core node on testnet4
+# (full, with txindex) and a bal-pusher for testnet4. The pusher writes into
+# the Will Executor's own database and signs its welist reports with the Will
+# Executor's key, so there is still one server and one dashboard; the payout
+# address and fee for testnet4 are set in the Will Executor's Settings.
+#
+# The icon opens the Will Executor dashboard on testnet4.
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: safe21-will-executor_ui_1
+      APP_PORT: 80
+
+  bitcoind:
+    image: bitcoin/bitcoin:29.5@sha256:97b2ae3833880760b36481cba435de7b6f32218bc8eb6aaa5ac321d9591b9ae4
+    restart: on-failure
+    stop_grace_period: 2m
+    command:
+      - bitcoind
+      - -testnet4=1
+      - -server=1
+      - -listen=0
+      - -txindex=1
+      - -dbcache=300
+      - -maxmempool=100
+      - -nodebuglogfile=1
+      - -rpcbind=0.0.0.0:48332
+      - -rpcallowip=10.77.5.0/24
+      - -zmqpubhashblock=tcp://0.0.0.0:24332
+    volumes:
+      - ${APP_DATA_DIR}/data/bitcoin:/home/bitcoin/.bitcoin
+    networks:
+      - testnet4
+    mem_limit: 2g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  pusher:
+    image: ghcr.io/manx-safe21/bal-will-executor:0.3.2-umbrel.6@sha256:d0937eac9cb782d9f2d84cf004c7d6210039c885e5735ceac3b3a8bca1375aa6
+    restart: on-failure
+    stop_grace_period: 30s
+    depends_on:
+      - bitcoind
+    # The binary directly, not entrypoint-pusher.sh: that one probes the
+    # mainnet ZMQ port and rewrites zmq-status.json, which belongs to the
+    # mainnet pusher. load-app-env.sh brings in the Will Executor's welist
+    # options (BAL_SEND_STATS, BAL_PUBLIC_URL) from its data/app.env.
+    #
+    # The pusher starts only once the testnet4 node has finished its initial
+    # sync: against a node still syncing, transactions that were already
+    # confirmed would not be found and would be marked "done elsewhere".
+    # (A small JSON-RPC call over bash's /dev/tcp; "$$" is a literal "$".)
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        source /scripts/load-app-env.sh
+        cookie=/bitcoin-testnet4/testnet4/.cookie
+        body='{"jsonrpc":"1.0","id":"w","method":"getblockchaininfo","params":[]}'
+        echo "[testnet4] waiting for the testnet4 node to finish its initial sync"
+        while :; do
+          if [ -r "$$cookie" ] && exec 3<>/dev/tcp/bitcoind/48332; then
+            printf 'POST / HTTP/1.0\r\nHost: bitcoind\r\nAuthorization: Basic %s\r\nContent-Type: application/json\r\nContent-Length: %d\r\n\r\n%s' \
+              "$$(base64 -w0 "$$cookie")" "$${#body}" "$$body" >&3
+            reply="$$(cat <&3)"
+            exec 3>&-
+            case "$$reply" in
+              *'"initialblockdownload":false'*) break ;;
+            esac
+          fi
+          sleep 30
+        done
+        echo "[testnet4] node synced, starting the pusher"
+        exec /usr/local/bin/bal-pusher testnet4
+    environment:
+      BAL_PUSHER_DB_FILE: /data/bal.db
+      BAL_PUSHER_TESTNET4_HOST: http://bitcoind
+      BAL_PUSHER_TESTNET4_PORT: "48332"
+      BAL_PUSHER_TESTNET4_COOKIE_FILE: /bitcoin-testnet4/testnet4/.cookie
+      BAL_PUSHER_TESTNET4_ZMQ_HASHBLOCK: tcp://bitcoind:24332
+      SSL_KEY_PATH: /data/keys/private_key.pem
+      BAL_PUSHER_SEND_STATS: "false"
+      BAL_SERVER_URL: ""
+      RUST_LOG: info
+    volumes:
+      # The Will Executor's data folder (database, welist key, app.env).
+      - ${APP_DATA_DIR}/../safe21-will-executor/data:/data
+      - ${APP_DATA_DIR}/data/bitcoin:/bitcoin-testnet4:ro
+    networks:
+      - testnet4
+      # IPv6 bridge for welist.bitcoin-after.life (see the main app).
+      - bal-v6
+
+networks:
+  testnet4:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.77.5.0/24
+  bal-v6:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: fd00:ba1:e23::/64

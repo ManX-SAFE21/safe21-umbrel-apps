@@ -1,0 +1,38 @@
+manifestVersion: 1
+id: safe21-will-executor-testnet4
+category: bitcoin
+name: Will Executor Testnet4
+version: "0.3.2-umbrel.6"
+tagline: Adds Bitcoin testnet4 to your Will Executor
+icon: https://raw.githubusercontent.com/ManX-SAFE21/safe21-umbrel-apps/main/safe21-will-executor-testnet4/icon.svg
+description: >-
+  Adds Bitcoin testnet4 to the Will Executor, so wallets can test inheritance
+  plans with test coins before using real bitcoin.
+
+
+  The app runs its own Bitcoin Core node on testnet4 (a full node with the
+  transaction index; the testnet4 chain is much smaller than mainnet) and a watcher that
+  broadcasts testnet4 transactions when their locktime arrives. It works
+  together with the Will Executor app: same database, same dashboard, same
+  welist identity.
+
+
+  After installing, wait for the testnet4 node to sync, then open the Will Executor's Settings and fill in the Testnet4 card
+  with a testnet4 payout address (tb1...) and a minimum fee. The network
+  selector in the dashboard then shows Testnet4 next to Mainnet.
+developer: SAFE21
+website: https://we.safe21.io
+dependencies:
+  - safe21-will-executor
+repo: https://github.com/ManX-SAFE21/BAL_Will-Executor_Umbrel
+support: https://github.com/ManX-SAFE21/BAL_Will-Executor_Umbrel/issues
+port: 9146
+gallery: []
+path: "/?net=testnet4"
+defaultUsername: ""
+defaultPassword: ""
+releaseNotes: >-
+  First release: testnet4 node and pusher for the Will Executor, with the
+  payout address and fee set from the Will Executor's Settings.
+submitter: SAFE21
+submission: ""

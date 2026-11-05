@@ -2,7 +2,7 @@ manifestVersion: 1
 id: safe21-will-executor
 category: bitcoin
 name: Will Executor
-version: "0.3.2-umbrel.5"
+version: "0.3.2-umbrel.6"
 tagline: Broadcast pre-signed Bitcoin transactions when their locktime arrives
 icon: https://raw.githubusercontent.com/ManX-SAFE21/safe21-umbrel-apps/main/safe21-will-executor/icon.svg
 description: >-
@@ -56,7 +56,7 @@ path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  Fix: "Restart server now" in Settings left the server stopped. The server
-  now restarts after applying new settings.
+  Settings has a Testnet4 card (payout address and fee) when the new
+  "Will Executor Testnet4" app is installed.
 submitter: SAFE21
 submission: ""

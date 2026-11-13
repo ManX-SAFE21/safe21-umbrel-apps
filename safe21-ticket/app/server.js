@@ -12,7 +12,7 @@ const { openDb } = require('./lib/db.js');
 const G = require('./lib/guard.js');
 const W = require('./lib/web.js');
 
-const VERSION = '0.5.0';
+const VERSION = '0.5.1';
 const PUBLIC_PORT = Number(process.env.PUBLIC_PORT || 3000);
 const ADMIN_PORT = Number(process.env.ADMIN_PORT || 3001);
 const DATA_DIR = process.env.DATA_DIR || '/data';
@@ -47,6 +47,7 @@ const panelRoutes = require('./lib/panel.js')({
   store, mailer, jobs, publicUrl: process.env.PUBLIC_URL || '', dataDir: DATA_DIR, isUmbrel: () => !!adminCtx.getStore()?.umbrel,
 });
 const MIN_PW = 12;
+W.setAdminToken(() => G.csrfToken(store.secret));
 const fromUmbrel = G.umbrelProxyCheck(TRUSTED_PROXY_HOST);
 const adminCtx = new AsyncLocalStorage();
 
@@ -84,7 +85,7 @@ async function adminRoutes(req, res, umbrel) {
   const url = new URL(req.url, 'http://x');
   const p = url.pathname;
 
-  if (req.method === 'POST' && !G.sameOrigin(req, { behindProxy: umbrel })) return sendText(res, 403, 'Origine non consentita');
+  if (req.method === 'POST' && !G.adminFormOk(req, store.secret, url.searchParams.get('csrf'))) return sendText(res, 403, 'Origine non consentita');
   if (p === '/health') return sendText(res, 200, 'ok');
   if (req.method === 'GET' && (W.serveFont(res, p) || W.serveIcon(res, p))) return;
 

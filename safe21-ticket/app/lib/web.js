@@ -233,7 +233,15 @@ button.danger:hover{background:var(--danger);color:#fff}
 .hint{font-size:13px;color:var(--muted);margin:4px 0 0}
 `;
 
+// gettone dei moduli del pannello: server.js dice come farlo; page() lo aggiunge a ogni modulo
+let adminToken = null;
+const setAdminToken = (fn) => { adminToken = fn; };
+const withToken = (html) => (adminToken
+  ? html.replace(/(<form\b[^>]*\baction=")([^"]*)(")/g, (m, a, act, z) => `${a}${act}${act.includes('?') ? '&amp;' : '?'}csrf=${adminToken()}${z}`)
+  : html);
+
 function page(title, body, { admin = false, wide = false } = {}) {
+  if (admin) body = withToken(body);
   const right = admin ? '<div class="right"><span class="tag">pannello</span></div>' : '';
   return `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -247,4 +255,4 @@ ${admin ? '' : `<footer class="foot"><p>${icon('shield')}<span>I messaggi restan
 </div></body></html>`;
 }
 
-module.exports = { esc, SEC_HEADERS, send, sendText, redirect, readForm, readMultipart, field, serveFont, serveIcon, icon, msg, page };
+module.exports = { setAdminToken, esc, SEC_HEADERS, send, sendText, redirect, readForm, readMultipart, field, serveFont, serveIcon, icon, msg, page };

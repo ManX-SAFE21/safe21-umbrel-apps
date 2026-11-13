@@ -157,7 +157,29 @@ function sameOrigin(req, { behindProxy = false } = {}) {
   try { return new URL(origin).host === host; } catch { return false; }
 }
 
+/*
+ * Gettone dei moduli del pannello (contro i moduli mandati da altri siti).
+ * Serve quando il browser non manda Sec-Fetch-Site: succede aprendo il pannello in http, come
+ * http://umbrel.local:9170 (il browser manda quelle intestazioni solo su https e localhost).
+ * Il gettone è un'impronta segreta che cambia ogni 12 ore: un altro sito non può leggerlo
+ * dalle pagine del pannello, quindi non può mettere insieme un modulo valido.
+ */
+function csrfFor(secret, slot) { return crypto.createHmac('sha256', secret).update(`csrf:${slot}`).digest('hex').slice(0, 32); }
+const csrfSlot = () => Math.floor(Date.now() / (12 * 3600 * 1000));
+const csrfToken = (secret) => csrfFor(secret, csrfSlot());
+function csrfValid(secret, tok) {
+  if (typeof tok !== 'string' || !/^[0-9a-f]{32}$/.test(tok)) return false;
+  return [csrfSlot(), csrfSlot() - 1].some((s) => crypto.timingSafeEqual(Buffer.from(csrfFor(secret, s)), Buffer.from(tok)));
+}
+// moduli del pannello: mai da un altro sito; dallo stesso sito o con il gettone giusto
+function adminFormOk(req, secret, tok) {
+  const site = req.headers['sec-fetch-site'];
+  if (site) return site === 'same-origin';
+  return csrfValid(secret, tok);
+}
+
 module.exports = {
+  csrfToken, csrfValid, adminFormOk,
   isPrivateIp, clientIp, adminIp, netKey, visitorKey, rateLimit, overLimit, addHit, hashPassword, checkPassword,
   SESSION_MS, newSession, sessionOf, endSession, endOtherSessions, sessionCookie, umbrelProxyCheck, sameOrigin,
 };

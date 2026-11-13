@@ -1,0 +1,31 @@
+version: "3.7"
+
+services:
+  # L'icona di Umbrel apre il PANNELLO, protetto dal login di Umbrel:
+  # le richieste che arrivano da questo proxy non chiedono la password dell'app.
+  app_proxy:
+    environment:
+      APP_HOST: safe21-ticket_web_1
+      APP_PORT: 3001
+      PROXY_AUTH_ADD: "true"
+
+  web:
+    # node:22-alpine bloccata sulla sua impronta (vale per amd64 e arm64): niente cambi a sorpresa
+    image: node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a
+    restart: on-failure
+    user: "1000:1000"
+    working_dir: /app
+    command: ["node", "--no-warnings", "/app/server.js"]
+    environment:
+      PUBLIC_PORT: 3000
+      ADMIN_PORT: 3001
+      DATA_DIR: /data
+      # il container del proxy di Umbrel: solo da qui si entra senza password
+      TRUSTED_PROXY_HOST: safe21-ticket_app_proxy_1
+    volumes:
+      - ${APP_DATA_DIR}/app:/app:ro
+      - ${APP_DATA_DIR}/data:/data
+    # Nessuna porta aperta sulla rete di casa:
+    # - la pagina PUBBLICA si raggiunge solo dal tunnel Cloudflare: http://safe21-ticket_web_1:3000
+    # - il PANNELLO dall'icona di Umbrel (porta 9170) e, da fuori casa, da ticket-admin.safe21.io
+    #   con Cloudflare Access davanti (passo 8). Mai puntare il tunnel pubblico sulla 3001.

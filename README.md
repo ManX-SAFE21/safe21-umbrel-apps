@@ -23,6 +23,7 @@ Step-by-step guide (Italian) for a Raspberry Pi:
 |---|---|
 | **Will Executor** (`safe21-will-executor`) | Stores pre-signed Bitcoin transactions with a future locktime and broadcasts them through your node when the time comes. Requires the Bitcoin Node app. Mainnet only. |
 | **Will Executor Testnet4** (`safe21-will-executor-testnet4`) | Optional companion: adds Bitcoin testnet4 (its own testnet4 node and watcher) to the Will Executor. Requires the Will Executor app. |
+| **Sportello Ticket** (`safe21-ticket`) | SAFE21 support desk (Italian). Customers open tickets on a public page served through a Cloudflare tunnel (`http://safe21-ticket_web_1:3000`); message text stays on the Umbrel, emails carry only a notice with the private link. The app icon opens the reply panel behind the Umbrel login. |
 
 The Will Executor's source code and Docker image builds live in
 [ManX-SAFE21/BAL_Will-Executor_Umbrel](https://github.com/ManX-SAFE21/BAL_Will-Executor_Umbrel).

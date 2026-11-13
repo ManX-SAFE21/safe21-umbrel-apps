@@ -1,0 +1,26 @@
+manifestVersion: 1
+id: safe21-ticket
+category: automation
+name: Sportello Ticket
+icon: https://raw.githubusercontent.com/ManX-SAFE21/safe21-umbrel-apps/main/safe21-ticket/icon.svg
+version: "0.5.0"
+tagline: Assistenza SAFE21, con i messaggi solo sul tuo Umbrel
+description: >-
+  Sportello di assistenza per i clienti di SAFE21. I clienti aprono un ticket
+  dalla pagina pubblica (raggiungibile con un tunnel Cloudflare) e lo seguono
+  da un link privato. Il testo dei messaggi resta solo su questo Umbrel: per
+  email partono soltanto avvisi con il link, mai il contenuto. L'icona
+  dell'app apre il pannello per rispondere, protetto dal login di Umbrel.
+developer: SAFE21
+website: https://safe21.io
+dependencies: []
+repo: ""
+support: ""
+port: 9170
+gallery: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+releaseNotes: "Versione di prova: pagine per i clienti e pannello (lista, risposte, note interne, impostazioni, copia di sicurezza e ripristino) e avvisi email con pulizia delle copie in Gmail, avvisi Telegram al gestore, chiusura e cancellazione automatiche. Per passare a una nuova versione usa sempre Aggiorna: disinstallare l'app cancella tutti i ticket."
+submitter: SAFE21
+submission: ""

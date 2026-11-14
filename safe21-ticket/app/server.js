@@ -12,7 +12,7 @@ const { openDb } = require('./lib/db.js');
 const G = require('./lib/guard.js');
 const W = require('./lib/web.js');
 
-const VERSION = '0.5.2';
+const VERSION = '0.6.0';
 const PUBLIC_PORT = Number(process.env.PUBLIC_PORT || 3000);
 const ADMIN_PORT = Number(process.env.ADMIN_PORT || 3001);
 const DATA_DIR = process.env.DATA_DIR || '/data';
@@ -41,6 +41,9 @@ const handlePublic = require('./lib/public.js')({
   minFormMs: Number(process.env.MIN_FORM_MS || 3000),
   publicUrl: process.env.PUBLIC_URL || '',
 });
+
+/* ---------- pannello da fuori casa: firma di Cloudflare Access (lib/access.js) ---------- */
+const access = require('./lib/access.js')({ getSetting: store.getSetting, certsUrl: process.env.ACCESS_CERTS_URL || '' });
 
 /* ---------- pannello (accesso qui, pagine in lib/panel.js) ---------- */
 const panelRoutes = require('./lib/panel.js')({
@@ -76,10 +79,29 @@ function passwordPage(err = '', ok = '') {
       <p style="margin-top:16px"><button>${icon('lock')}Salva</button> <a class="btn ghost" href="/">Annulla</a></p></form>`, { admin: true });
 }
 
+// da fuori casa (non dall'icona di Umbrel) si entra solo con la firma valida di Cloudflare Access
+function closedPage() {
+  return page('Pannello chiuso', `<h1>Pannello non raggiungibile da qui</h1>
+    <p class="sub">${access.configured()
+    ? 'Questa richiesta non è passata da Cloudflare Access, oppure il suo accesso è scaduto. Ricarica la pagina per rifare il controllo.'
+    : "Il pannello da fuori casa non è attivo. Aprilo dall'icona dell'app su Umbrel."}</p>`, { admin: true });
+}
 async function handleAdmin(req, res) {
   const umbrel = await fromUmbrel(req);
-  return adminCtx.run({ umbrel }, () => adminRoutes(req, res, umbrel));
+  let cf = false;
+  if (!umbrel) {
+    const p = new URL(req.url, 'http://x').pathname;
+    if (p === '/health') return sendText(res, 200, 'ok');
+    if (!(await access.check(req))) {
+      // il corpo non serve: dopo la risposta si chiude il collegamento
+      if (req.method !== 'GET' && req.method !== 'HEAD') res.on('finish', () => req.destroy());
+      return send(res, 403, closedPage());
+    }
+    cf = true;
+  }
+  return adminCtx.run({ umbrel, cf }, () => adminRoutes(req, res, umbrel));
 }
+const ipOf = (req) => G.netKey(G.adminIp(req, !!adminCtx.getStore()?.cf));
 
 async function adminRoutes(req, res, umbrel) {
   const url = new URL(req.url, 'http://x');
@@ -94,7 +116,7 @@ async function adminRoutes(req, res, umbrel) {
     if (req.method !== 'POST') return send(res, 200, loginPage());
     const stored = getSetting('admin_hash');
     if (!stored) return send(res, 403, loginPage());
-    const ip = G.netKey(G.adminIp(req));
+    const ip = ipOf(req);
     const f = await readForm(req);
     if (!G.rateLimit('login:' + ip, 5, 600000)) return send(res, 429, loginPage('Troppi tentativi. Riprova tra 10 minuti.'));
     if (!(await G.checkPassword(f.get('pw') || '', stored))) return send(res, 401, loginPage('Password errata.'));
@@ -113,7 +135,7 @@ async function adminRoutes(req, res, umbrel) {
     const pw = f.get('pw') || '';
     // da fuori casa serve anche la password attuale: una sessione rubata non basta a cambiarla
     if (!umbrel) {
-      if (!G.rateLimit('login:' + G.netKey(G.adminIp(req)), 5, 600000)) return send(res, 429, passwordPage('Troppi tentativi. Riprova tra 10 minuti.'));
+      if (!G.rateLimit('login:' + ipOf(req), 5, 600000)) return send(res, 429, passwordPage('Troppi tentativi. Riprova tra 10 minuti.'));
       if (!(await G.checkPassword(f.get('old') || '', getSetting('admin_hash')))) return send(res, 401, passwordPage('La password attuale non è giusta.'));
     }
     if (pw.length < MIN_PW) return send(res, 400, passwordPage(`La password deve avere almeno ${MIN_PW} caratteri.`));

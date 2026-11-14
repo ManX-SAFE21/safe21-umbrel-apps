@@ -36,13 +36,14 @@ function clientIp(req) {
 }
 
 /*
- * Indirizzo per il blocco dei tentativi di accesso al PANNELLO: CF-Connecting-IP (da fuori casa
- * si arriva solo dal tunnel, che lo scrive sempre) oppure l'indirizzo vero della connessione.
- * Mai X-Forwarded-For: cambiandolo si aggirerebbe il blocco.
+ * Indirizzo per il blocco dei tentativi di accesso al PANNELLO.
+ * CF-Connecting-IP vale solo se la richiesta ha la firma valida di Cloudflare Access (cfTrusted):
+ * allora è passata davvero da Cloudflare, che scrive quell'intestazione. Altrimenti l'indirizzo vero
+ * della connessione. Mai X-Forwarded-For: cambiandolo si aggirerebbe il blocco.
  */
-function adminIp(req) {
+function adminIp(req, cfTrusted = false) {
   const cf = String(req.headers['cf-connecting-ip'] || '').trim();
-  if (cf && net.isIP(cf)) return cf;
+  if (cfTrusted && cf && net.isIP(cf)) return cf;
   return req.socket.remoteAddress || 'unknown';
 }
 

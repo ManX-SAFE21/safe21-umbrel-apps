@@ -24,8 +24,9 @@ const STATUS = {
   closed: ['p-closed', 'Chiuso'],
 };
 // regole delle impostazioni e dei segreti in lib/rules.js (le stesse valgono per il ripristino)
-const { SETTINGS, SETTING_LABELS, SECRET_KEYS, validEmail, normTopics, topicsOf, TOPICS_MAX, TOPIC_LEN } = require('./rules.js');
+const { SETTINGS, SETTING_LABELS, SECRET_KEYS, LOCAL_KEYS, validEmail, normTopics, topicsOf, TOPICS_MAX, TOPIC_LEN } = require('./rules.js');
 const sealed = require('./sealed.js');
+const { normTeam } = require('./access.js');
 // messaggi dopo un'azione: nell'indirizzo va solo un codice, il testo è fisso (nessuno può far
 // comparire nel pannello un avviso scritto da lui con un link preparato)
 const FLASH = {
@@ -221,6 +222,15 @@ module.exports = function makePanel({ store, mailer, jobs, publicUrl = '', dataD
           <p class="hint">Al massimo ${TOPICS_MAX} argomenti, ognuno fino a ${TOPIC_LEN} caratteri, senza doppioni.
             I ticket già aperti tengono il loro argomento anche se qui lo cambi o lo togli.</p>
         </div>
+        <div class="card" style="margin-top:14px"><h2>${icon('lock')}Pannello da fuori casa (Cloudflare Access)</h2>
+          ${isUmbrel() ? `<p class="hint">Da fuori casa il pannello si apre solo dopo il codice di Cloudflare Access.
+            Li trovi in Cloudflare Zero Trust: il team in Settings, il codice AUD nell'applicazione Access di ticket-admin.safe21.io.
+            Lasciali vuoti per tenere il pannello chiuso da fuori.</p>
+          <div class="row2">
+            <div><label for="access_team">Team di Cloudflare</label><input id="access_team" name="access_team" value="${v('access_team')}" placeholder="es. safe21.cloudflareaccess.com"></div>
+            <div><label for="access_aud">Codice AUD</label><input id="access_aud" name="access_aud" value="${v('access_aud')}" placeholder="es. 64 lettere e numeri" autocomplete="off"></div>
+          </div>` : `<p class="hint">Si cambia solo dall'icona dell'app su Umbrel. Team: <b>${esc(getSetting('access_team'))}</b>.</p>`}
+        </div>
         <div class="btns"><button>${icon('checkc')}Salva le impostazioni</button><a class="btn ghost" href="/password">${icon('lock')}Password del pannello</a></div>
       </form>
       <form method="post" action="/prova-email" class="card" style="margin-top:14px">
@@ -295,6 +305,10 @@ module.exports = function makePanel({ store, mailer, jobs, publicUrl = '', dataD
       const f = await readForm(req, MAX_ADMIN_FORM);
       const typed = {};
       for (const k of Object.keys(SETTINGS)) typed[k] = k === 'topics' ? normTopics(f.get(k)) : (f.get(k) || '').trim();
+      typed.access_team = normTeam(typed.access_team);
+      typed.access_aud = typed.access_aud.toLowerCase();
+      // da fuori casa le impostazioni di Access restano come sono, qualunque cosa arrivi dal modulo
+      if (!isUmbrel()) for (const k of LOCAL_KEYS) typed[k] = getSetting(k, '');
       const bad = Object.keys(SETTINGS).find((k) => !(SECRET_KEYS.includes(k) && typed[k] === '') && !SETTINGS[k](typed[k]));
       const why = bad ? `Controlla il campo «${SETTING_LABELS[bad] || bad}».${bad === 'topics' ? ` Al massimo ${TOPICS_MAX} argomenti, ognuno fino a ${TOPIC_LEN} caratteri, senza doppioni.` : ''}`
         : (typed.topics === '' ? 'Scrivi almeno un argomento.' : '');

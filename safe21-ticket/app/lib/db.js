@@ -230,7 +230,7 @@ function openDb(dir) {
   /* ---------- copia di sicurezza ---------- */
   // Nella copia: ticket, messaggi, chiave dei link e le impostazioni normali.
   // Mai: password della posta, token di Telegram, password del pannello, segreto delle firme.
-  const IMPORTABLE = Object.keys(R.SETTINGS).filter((k) => !R.SECRET_KEYS.includes(k));
+  const IMPORTABLE = Object.keys(R.SETTINGS).filter((k) => !R.SECRET_KEYS.includes(k) && !R.LOCAL_KEYS.includes(k));
   const TICKET_COLS = ['id', 'number', 'token_hash', 'token_enc', 'name', 'email', 'topic', 'status', 'unread', 'created_at', 'updated_at', 'last_customer_at', 'closed_at', 'auto_closed'];
   const MESSAGE_COLS = ['id', 'ticket_id', 'author', 'body', 'created_at'];
   function exportAll() {

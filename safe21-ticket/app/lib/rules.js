@@ -44,19 +44,25 @@ const SETTINGS = {
   // pulizia delle copie in Gmail (vuoto = spenta): server IMAP, sempre cifrato sulla porta 993
   imap_host: (v) => v === '' || /^[A-Za-z0-9.-]{1,253}$/.test(v),
   topics: validTopics,
+  // pannello da fuori casa (Cloudflare Access): nome del team e codice AUD dell'applicazione
+  access_team: (v) => v === '' || /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(v),
+  access_aud: (v) => v === '' || /^[0-9a-f]{64}$/.test(v),
 };
 // nomi dei campi da mostrare negli errori (mai la chiave tecnica)
 const SETTING_LABELS = {
   smtp_host: 'Server', smtp_port: 'Porta', smtp_user: 'Utente', smtp_pass: 'Password', smtp_from: 'Mittente',
   public_url: 'Indirizzo pubblico', autoclose_days: 'Chiusura automatica', tg_token: 'Token del bot', tg_chat: 'Chat id',
-  imap_host: 'Server IMAP', topics: 'Argomenti',
+  imap_host: 'Server IMAP', topics: 'Argomenti', access_team: 'Team di Cloudflare', access_aud: 'Codice AUD',
 };
+// impostazioni che si cambiano solo dall'icona di Umbrel: mai da fuori casa, mai da una copia di sicurezza
+// (chi avesse rubato una sessione non deve poter spostare la serratura di Cloudflare Access)
+const LOCAL_KEYS = ['access_team', 'access_aud'];
 // segreti: mai mostrati nelle pagine, mai nella copia di sicurezza, mai presi da una copia
 const SECRET_KEYS = ['smtp_pass', 'tg_token'];
 
 const LIMITS = { name: 80, topic: 100, body: 10000 };
 
 module.exports = {
-  EMAIL_RE, validEmail, noCtl, SETTINGS, SETTING_LABELS, SECRET_KEYS, SMTP_PORTS, LIMITS,
+  EMAIL_RE, validEmail, noCtl, SETTINGS, SETTING_LABELS, SECRET_KEYS, LOCAL_KEYS, SMTP_PORTS, LIMITS,
   DEFAULT_TOPICS, TOPICS_MAX, TOPIC_LEN, normTopics, validTopics, topicsOf,
 };

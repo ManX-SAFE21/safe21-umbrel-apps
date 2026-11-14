@@ -182,5 +182,5 @@ function adminFormOk(req, secret, tok) {
 module.exports = {
   csrfToken, csrfValid, adminFormOk,
   isPrivateIp, clientIp, adminIp, netKey, visitorKey, rateLimit, overLimit, addHit, hashPassword, checkPassword,
-  SESSION_MS, newSession, sessionOf, endSession, endOtherSessions, sessionCookie, umbrelProxyCheck, sameOrigin,
+  SESSION_MS, newSession, sessionOf, endSession, endOtherSessions, sessionCookie, isHttps, umbrelProxyCheck, sameOrigin,
 };

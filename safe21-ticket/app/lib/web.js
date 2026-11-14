@@ -6,6 +6,7 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
+const { AsyncLocalStorage } = require('node:async_hooks');
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -131,16 +132,34 @@ const ICONS = {
 const icon = (n) => `<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n] || ''}</svg>`;
 const msg = (kind, html) => `<div class="msg ${kind}">${icon({ ok: 'checkc', err: 'alert', warn: 'info' }[kind])}<div>${html}</div></div>`;
 
-/* ---------- grafica: colori e misure di safe21.io (tema scuro, chiaro se il sistema lo chiede) ---------- */
+/*
+ * Tema chiaro o scuro delle pagine pubbliche.
+ * Il link di safe21.io porta ?tema=chiaro oppure ?tema=scuro (il tema scelto sul sito): l'app lo ricorda
+ * in un cookie «tema», così anche le pagine dopo (conferma, ticket) restano uguali.
+ * Senza scelta: tema del telefono o del computer, come prima.
+ */
+const themeCtx = new AsyncLocalStorage();
+const THEMES = { chiaro: 'light', scuro: 'dark' };
+function themeOf(req, url) {
+  const q = url.searchParams.get('tema');
+  if (q && Object.hasOwn(THEMES, q)) return { theme: THEMES[q], set: true };
+  const m = /(?:^|;\s*)tema=(light|dark)(?:;|$)/.exec(req.headers.cookie || '');
+  return { theme: m ? m[1] : '', set: false };
+}
+const themeCookie = (theme, https) => `tema=${theme}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax${https ? '; Secure' : ''}`;
+
+/* ---------- grafica: colori e misure di safe21.io (tema scuro, chiaro se scelto o se il sistema lo chiede) ---------- */
+const LIGHT = `--ink:#F4F6F9;--ink-2:#E8EDF4;--panel:#FFFFFF;--line:#D3DBE6;--light:#0A0F1C;--body:#1F2A3C;
+--muted:#5A6678;--teal:#0D9488;--teal-d:#0B7C72;--danger:#C93C3C;--btn-text:#FFFFFF;--accent-hover:#0B7C72;
+--tint-teal-bg:rgba(13,148,136,.07);--tint-teal-bd:rgba(13,148,136,.3);color-scheme:light`;
 const CSS = `
 @font-face{font-family:Roboto;src:url(/fonts/roboto-latin-wght-normal.woff2) format('woff2');font-weight:100 900;font-display:swap}
 @font-face{font-family:'Space Mono';src:url(/fonts/space-mono-latin-400-normal.woff2) format('woff2');font-weight:400;font-display:swap}
 :root{--ink:#0A0F1C;--ink-2:#0E1525;--panel:#111B2E;--line:#1F2B44;--light:#F5F7FA;--body:#DDE4EE;--muted:#95A1B5;
 --teal:#2DD4BF;--teal-d:#0D9488;--orange:#F7931A;--danger:#F26D6D;--btn-text:#04201C;--accent-hover:#45e0cd;
 --tint-teal-bg:rgba(45,212,191,.07);--tint-teal-bd:rgba(45,212,191,.28);color-scheme:dark}
-@media (prefers-color-scheme:light){:root{--ink:#F4F6F9;--ink-2:#E8EDF4;--panel:#FFFFFF;--line:#D3DBE6;--light:#0A0F1C;--body:#1F2A3C;
---muted:#5A6678;--teal:#0D9488;--teal-d:#0B7C72;--danger:#C93C3C;--btn-text:#FFFFFF;--accent-hover:#0B7C72;
---tint-teal-bg:rgba(13,148,136,.07);--tint-teal-bd:rgba(13,148,136,.3);color-scheme:light}}
+@media (prefers-color-scheme:light){:root:not([data-theme=dark]){${LIGHT}}}
+:root[data-theme=light]{${LIGHT}}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--ink);color:var(--body);font:16px/1.55 Roboto,'Segoe UI',Arial,sans-serif}
 .wrap{max-width:720px;margin:0 auto;padding:28px 16px 64px}
@@ -243,7 +262,8 @@ const withToken = (html) => (adminToken
 function page(title, body, { admin = false, wide = false } = {}) {
   if (admin) body = withToken(body);
   const right = admin ? '<div class="right"><span class="tag">pannello</span></div>' : '';
-  return `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8">
+  const theme = themeCtx.getStore();
+  return `<!DOCTYPE html><html lang="it"${theme ? ` data-theme="${theme}"` : ''}><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>${esc(title)} · SAFE21 Ticket</title>
@@ -255,4 +275,4 @@ ${admin ? '' : `<footer class="foot"><p>${icon('shield')}<span>I messaggi restan
 </div></body></html>`;
 }
 
-module.exports = { setAdminToken, esc, SEC_HEADERS, send, sendText, redirect, readForm, readMultipart, field, serveFont, serveIcon, icon, msg, page };
+module.exports = { themeCtx, themeOf, themeCookie, setAdminToken, esc, SEC_HEADERS, send, sendText, redirect, readForm, readMultipart, field, serveFont, serveIcon, icon, msg, page };

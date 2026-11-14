@@ -163,6 +163,13 @@ module.exports = function makePublic({ store, minFormMs = 3000, publicUrl = '', 
   /* ---------- richieste ---------- */
   return async function handlePublic(req, res) {
     const url = new URL(req.url, 'http://x');
+    // tema scelto sul sito (?tema=) o ricordato dal cookie: vale per tutte le pagine di questa richiesta
+    const th = W.themeOf(req, url);
+    if (th.set) res.setHeader('Set-Cookie', W.themeCookie(th.theme, G.isHttps(req)));
+    return W.themeCtx.run(th.theme, () => route(req, res, url));
+  };
+
+  async function route(req, res, url) {
     const p = url.pathname;
 
     if (p === '/health') return sendText(res, 200, 'ok');
@@ -264,5 +271,5 @@ module.exports = function makePublic({ store, minFormMs = 3000, publicUrl = '', 
     }
 
     return send(res, 404, page('Non trovato', '<h1>Pagina non trovata</h1><p><a href="/">Torna allo sportello</a></p>'));
-  };
+  }
 };

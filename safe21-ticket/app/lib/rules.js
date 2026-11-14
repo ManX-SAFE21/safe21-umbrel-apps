@@ -9,6 +9,26 @@ const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2
 const validEmail = (v) => typeof v === 'string' && v.length <= 200 && EMAIL_RE.test(v);
 const noCtl = (v) => !/[\u0000-\u001f\u007f]/.test(v);
 
+/*
+ * Argomenti del modulo pubblico: li sceglie il gestore nelle impostazioni (uno per riga).
+ * Ogni ticket salva il NOME dell'argomento: cambiare o togliere un argomento non tocca i ticket vecchi.
+ * Impostazione vuota = argomenti di partenza.
+ */
+const DEFAULT_TOPICS = ["Àncòra — plugin per l'eredità", 'Easy Heirs', 'Schèi wallet', 'Corsi ed eventi', 'Altro'];
+const TOPICS_MAX = 15;
+const TOPIC_LEN = 60;
+// caratteri invisibili o che girano il testo: un argomento deve essere quello che si vede
+const INVISIBLE = /[\u0080-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069\ufeff]/;
+// testo della casella -> righe pulite (spazi tolti, righe vuote saltate), unite da un solo a capo
+const normTopics = (v) => String(v || '').split(/\r?\n/).map((x) => x.trim()).filter(Boolean).join('\n');
+function validTopics(v) {
+  if (v === '') return true;
+  const a = v.split('\n');
+  return a.length <= TOPICS_MAX && a.every((x) => x.length >= 1 && x.length <= TOPIC_LEN && x === x.trim() && noCtl(x) && !INVISIBLE.test(x))
+    && new Set(a.map((x) => x.toLowerCase())).size === a.length;
+}
+const topicsOf = (getSetting) => { const v = getSetting('topics', ''); return v && validTopics(v) ? v.split('\n') : DEFAULT_TOPICS; };
+
 // Impostazioni modificabili: chiave -> controllo. Nessun'altra chiave entra da un modulo o da una copia.
 const SMTP_PORTS = ['25', '465', '587', '2525'];
 const SETTINGS = {
@@ -23,10 +43,20 @@ const SETTINGS = {
   tg_chat: (v) => v === '' || /^-?\d{1,20}$/.test(v),
   // pulizia delle copie in Gmail (vuoto = spenta): server IMAP, sempre cifrato sulla porta 993
   imap_host: (v) => v === '' || /^[A-Za-z0-9.-]{1,253}$/.test(v),
+  topics: validTopics,
+};
+// nomi dei campi da mostrare negli errori (mai la chiave tecnica)
+const SETTING_LABELS = {
+  smtp_host: 'Server', smtp_port: 'Porta', smtp_user: 'Utente', smtp_pass: 'Password', smtp_from: 'Mittente',
+  public_url: 'Indirizzo pubblico', autoclose_days: 'Chiusura automatica', tg_token: 'Token del bot', tg_chat: 'Chat id',
+  imap_host: 'Server IMAP', topics: 'Argomenti',
 };
 // segreti: mai mostrati nelle pagine, mai nella copia di sicurezza, mai presi da una copia
 const SECRET_KEYS = ['smtp_pass', 'tg_token'];
 
 const LIMITS = { name: 80, topic: 100, body: 10000 };
 
-module.exports = { EMAIL_RE, validEmail, noCtl, SETTINGS, SECRET_KEYS, SMTP_PORTS, LIMITS };
+module.exports = {
+  EMAIL_RE, validEmail, noCtl, SETTINGS, SETTING_LABELS, SECRET_KEYS, SMTP_PORTS, LIMITS,
+  DEFAULT_TOPICS, TOPICS_MAX, TOPIC_LEN, normTopics, validTopics, topicsOf,
+};

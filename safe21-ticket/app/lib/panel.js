@@ -4,7 +4,7 @@
  *  /                    lista dei ticket (?vista=open|waiting|closed|all)
  *  /ticket/<numero>     conversazione con note interne; rispondi, nota, chiudi/riapri, nuovo link, elimina
  *  /impostazioni        posta in uscita, Telegram, indirizzo pubblico, chiusura automatica
- *  /backup, /ripristina copia di sicurezza (senza la password della posta)
+ *  /backup, /ripristina copia di sicurezza protetta da password (senza la password della posta)
  * Gli avvisi email vanno solo in coda (invio al passo 4): mai testo dei messaggi, mai nome del cliente.
  */
 const fs = require('node:fs');
@@ -24,7 +24,8 @@ const STATUS = {
   closed: ['p-closed', 'Chiuso'],
 };
 // regole delle impostazioni e dei segreti in lib/rules.js (le stesse valgono per il ripristino)
-const { SETTINGS, SECRET_KEYS, validEmail } = require('./rules.js');
+const { SETTINGS, SETTING_LABELS, SECRET_KEYS, validEmail, normTopics, topicsOf, TOPICS_MAX, TOPIC_LEN } = require('./rules.js');
+const sealed = require('./sealed.js');
 // messaggi dopo un'azione: nell'indirizzo va solo un codice, il testo è fisso (nessuno può far
 // comparire nel pannello un avviso scritto da lui con un link preparato)
 const FLASH = {
@@ -192,27 +193,33 @@ module.exports = function makePanel({ store, mailer, jobs, publicUrl = '', dataD
         <div class="card"><h2>${icon('mail')}Posta in uscita</h2>
           <p class="hint">Per Gmail: server smtp.gmail.com, porta 465, utente l'indirizzo Gmail, password = password per le app.</p>
           <div class="row2">
-            <div><label for="smtp_host">Server</label><input id="smtp_host" name="smtp_host" value="${v('smtp_host')}" placeholder="smtp.gmail.com"></div>
-            <div><label for="smtp_port">Porta</label><input id="smtp_port" name="smtp_port" inputmode="numeric" value="${v('smtp_port')}" placeholder="465"></div>
+            <div><label for="smtp_host">Server</label><input id="smtp_host" name="smtp_host" value="${v('smtp_host')}" placeholder="es. smtp.gmail.com"></div>
+            <div><label for="smtp_port">Porta</label><input id="smtp_port" name="smtp_port" inputmode="numeric" value="${v('smtp_port')}" placeholder="es. 465"></div>
           </div>
-          <label for="smtp_user">Utente</label><input id="smtp_user" name="smtp_user" autocomplete="off" value="${v('smtp_user')}" placeholder="safe21.ticket@gmail.com">
+          <label for="smtp_user">Utente</label><input id="smtp_user" name="smtp_user" autocomplete="off" value="${v('smtp_user')}" placeholder="es. nome@gmail.com">
           ${secret('smtp_pass', 'Password', 'Salvata solo su questo Umbrel. Non entra nella copia di sicurezza: dopo un ripristino va reinserita.')}
-          <label for="smtp_from">Mittente</label><input id="smtp_from" name="smtp_from" value="${v('smtp_from')}" placeholder="SAFE21 Ticket &lt;safe21.ticket@gmail.com&gt;">
+          <label for="smtp_from">Mittente</label><input id="smtp_from" name="smtp_from" value="${v('smtp_from')}" placeholder="es. SAFE21 Ticket &lt;nome@gmail.com&gt;">
           <label for="imap_host">Cancella da Gmail le copie degli avvisi (server IMAP)</label>
-          <input id="imap_host" name="imap_host" value="${v('imap_host')}" placeholder="imap.gmail.com">
+          <input id="imap_host" name="imap_host" value="${v('imap_host')}" placeholder="es. imap.gmail.com">
           <p class="hint">Con imap.gmail.com, dopo ogni invio l'app toglie dalla «Posta inviata» e dal Cestino le copie degli avvisi
             (contengono i link dei clienti), e dalla Posta in arrivo le risposte che citano un link. Vuoto = pulizia spenta.</p>
         </div>
         <div class="card" style="margin-top:14px"><h2>${icon('send')}Avvisi su Telegram</h2>
           <p class="hint">Lo stesso bot dei corsi: ti arrivano solo numero e argomento, mai il testo.</p>
           ${secret('tg_token', 'Token del bot', 'Lo trovi nelle impostazioni dei corsi o da BotFather.')}
-          <label for="tg_chat">Chat id</label><input id="tg_chat" name="tg_chat" value="${v('tg_chat')}">
+          <label for="tg_chat">Chat id</label><input id="tg_chat" name="tg_chat" value="${v('tg_chat')}" placeholder="es. 123456789">
         </div>
         <div class="card" style="margin-top:14px"><h2>${icon('settings')}Sportello</h2>
-          <label for="public_url">Indirizzo pubblico</label><input id="public_url" name="public_url" value="${v('public_url')}" placeholder="https://ticket.safe21.io">
+          <label for="public_url">Indirizzo pubblico</label><input id="public_url" name="public_url" value="${v('public_url')}" placeholder="es. https://ticket.safe21.io">
           <p class="hint">Serve per i link nelle email.</p>
           <label for="autoclose_days">Chiusura automatica dopo quanti giorni senza risposta del cliente</label>
           <input id="autoclose_days" name="autoclose_days" inputmode="numeric" value="${v('autoclose_days', '14')}">
+        </div>
+        <div class="card" style="margin-top:14px"><h2>${icon('list')}Argomenti del modulo</h2>
+          <label for="topics">Un argomento per riga, nell'ordine in cui il cliente li vede</label>
+          <textarea id="topics" name="topics" rows="7" style="min-height:170px">${esc(typed && typed.topics !== undefined ? typed.topics : topicsOf(getSetting).join('\n'))}</textarea>
+          <p class="hint">Al massimo ${TOPICS_MAX} argomenti, ognuno fino a ${TOPIC_LEN} caratteri, senza doppioni.
+            I ticket già aperti tengono il loro argomento anche se qui lo cambi o lo togli.</p>
         </div>
         <div class="btns"><button>${icon('checkc')}Salva le impostazioni</button><a class="btn ghost" href="/password">${icon('lock')}Password del pannello</a></div>
       </form>
@@ -220,7 +227,7 @@ module.exports = function makePanel({ store, mailer, jobs, publicUrl = '', dataD
         <h2>${icon('send')}Email di prova</h2>
         ${testError ? msg('err', 'Motivo: ' + esc(testError)) : ''}
         <label for="to">Manda una email di prova a</label>
-        <input id="to" name="to" type="email" required maxlength="200" value="${esc(getSetting('smtp_user'))}">
+        <input id="to" name="to" type="email" required maxlength="200" value="${esc(getSetting('test_to') || getSetting('smtp_user'))}">
         <div class="btns"><button class="ghost">${icon('send')}Manda un'email di prova</button></div>
       </form>`, { admin: true, wide: true });
   }
@@ -232,13 +239,22 @@ module.exports = function makePanel({ store, mailer, jobs, publicUrl = '', dataD
       <div class="card"><h2>${icon('download')}Scarica</h2>
         <p>Un file con tutti i ticket (${c.open + c.waiting + c.closed}), i messaggi, i link dei clienti e le impostazioni.
           Non contiene la password della posta, il token di Telegram né la password del pannello.</p>
-        ${msg('warn', 'Il file contiene i messaggi e i link dei clienti: chi lo ha può leggere i ticket. Tienilo poco, in un posto sicuro, e cancellalo quando non serve più.')}
-        <div class="btns"><a class="btn" href="/backup">${icon('download')}Scarica copia di sicurezza</a></div>
+        <form method="post" action="/backup">
+          <p class="hint">Il file è chiuso con una password che scegli adesso: senza la password nessuno lo può leggere.
+            Annotala in un posto sicuro: <b>se la perdi, la copia non si apre più</b>. Almeno ${sealed.MIN_PW} caratteri.</p>
+          <div class="row2">
+            <div><label for="bpw">Password della copia</label><input type="password" id="bpw" name="pw" required minlength="${sealed.MIN_PW}" maxlength="${sealed.MAX_PW}" autocomplete="new-password"></div>
+            <div><label for="bpw2">Ripeti la password</label><input type="password" id="bpw2" name="pw2" required minlength="${sealed.MIN_PW}" maxlength="${sealed.MAX_PW}" autocomplete="new-password"></div>
+          </div>
+          <div class="btns"><button>${icon('download')}Scarica copia di sicurezza</button></div>
+        </form>
       </div>
       <form method="post" action="/ripristina" enctype="multipart/form-data" class="card" style="margin-top:14px">
         <h2>${icon('upload')}Ripristina</h2>
         <p>Rimette i dati com'erano nel file: i ticket di adesso vengono sostituiti. Prima l'app salva da sola una copia dei dati attuali.</p>
         <label for="file">File della copia (.json)</label><input type="file" id="file" name="file" accept=".json,application/json" required>
+        <label for="rpw">Password della copia</label><input type="password" id="rpw" name="pw" maxlength="${sealed.MAX_PW}" autocomplete="off">
+        <p class="hint">Quella scelta quando hai scaricato la copia. Le copie vecchie senza password si ripristinano lasciandola vuota.</p>
         <label class="check"><input type="checkbox" name="sure" value="on" required> Sì, sostituisci i dati di adesso con quelli del file</label>
         <div class="btns"><button class="danger">${icon('upload')}Ripristina</button></div>
       </form>`, { admin: true, wide: true });
@@ -278,11 +294,13 @@ module.exports = function makePanel({ store, mailer, jobs, publicUrl = '', dataD
       if (!POST) return false;
       const f = await readForm(req, MAX_ADMIN_FORM);
       const typed = {};
-      for (const k of Object.keys(SETTINGS)) typed[k] = (f.get(k) || '').trim();
+      for (const k of Object.keys(SETTINGS)) typed[k] = k === 'topics' ? normTopics(f.get(k)) : (f.get(k) || '').trim();
       const bad = Object.keys(SETTINGS).find((k) => !(SECRET_KEYS.includes(k) && typed[k] === '') && !SETTINGS[k](typed[k]));
-      if (bad) {
+      const why = bad ? `Controlla il campo «${SETTING_LABELS[bad] || bad}».${bad === 'topics' ? ` Al massimo ${TOPICS_MAX} argomenti, ognuno fino a ${TOPIC_LEN} caratteri, senza doppioni.` : ''}`
+        : (typed.topics === '' ? 'Scrivi almeno un argomento.' : '');
+      if (why) {
         for (const k of SECRET_KEYS) delete typed[k]; // i segreti non tornano mai nella pagina
-        return send(res, 400, settingsPage(url, `Controlla il campo «${bad}».`, typed));
+        return send(res, 400, settingsPage(url, why, typed));
       }
       // se cambiano server o utente della posta senza una password nuova, la vecchia si cancella:
       // la password salvata non deve poter partire verso un altro server
@@ -314,6 +332,7 @@ module.exports = function makePanel({ store, mailer, jobs, publicUrl = '', dataD
     if (p === '/prova-email' && POST) {
       const to = field((await readForm(req, MAX_ADMIN_FORM)), 'to', 201);
       if (!validEmail(to)) return send(res, 400, settingsPage(url, 'Indirizzo per la prova non valido.'));
+      setSetting('test_to', to); // la prossima volta il campo propone l'ultimo indirizzo usato
       try {
         await mailer.sendTest(to);
         testError = '';
@@ -323,8 +342,13 @@ module.exports = function makePanel({ store, mailer, jobs, publicUrl = '', dataD
         return back(res, '/impostazioni', 'testfail');
       }
     }
-    if (p === '/backup' && GET) {
-      const body = JSON.stringify(store.exportAll(), null, 1);
+    if (p === '/backup' && GET) return redirect(res, '/copia'); // la copia si scarica solo con una password (modulo in /copia)
+    if (p === '/backup' && POST) {
+      const f = await readForm(req, MAX_ADMIN_FORM);
+      const pw = f.get('pw') || '';
+      if (pw.length < sealed.MIN_PW || pw.length > sealed.MAX_PW) return send(res, 400, backupPage(url, `La password della copia deve avere da ${sealed.MIN_PW} a ${sealed.MAX_PW} caratteri.`));
+      if (pw !== f.get('pw2')) return send(res, 400, backupPage(url, 'Le due password non coincidono.'));
+      const body = JSON.stringify(await sealed.seal(store.exportAll(), pw), null, 1);
       const day = new Date().toISOString().slice(0, 10);
       res.writeHead(200, {
         ...W.SEC_HEADERS, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store',
@@ -340,6 +364,12 @@ module.exports = function makePanel({ store, mailer, jobs, publicUrl = '', dataD
       if (!file || !file.data.length) return send(res, 400, backupPage(url, 'Scegli il file della copia.'));
       let data;
       try { data = JSON.parse(file.data.toString('utf8')); } catch { return send(res, 400, backupPage(url, 'Il file non è leggibile (non è una copia dello sportello).')); }
+      if (sealed.isSealed(data)) {
+        const pw = fields.get('pw') || '';
+        if (!pw) return send(res, 400, backupPage(url, 'Questa copia è protetta: scrivi la sua password.'));
+        if (pw.length > sealed.MAX_PW) return send(res, 400, backupPage(url, 'Password sbagliata, oppure il file è stato modificato.'));
+        try { data = await sealed.open(data, pw); } catch (e) { return send(res, 400, backupPage(url, e.message)); }
+      }
       try { store.checkBackup(data); } catch (e) { return send(res, 400, backupPage(url, e.message)); }
       saveBeforeRestore();
       store.importAll(data);

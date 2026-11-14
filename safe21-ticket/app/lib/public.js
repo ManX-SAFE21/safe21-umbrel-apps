@@ -15,14 +15,8 @@ const { ticketNumber } = require('./db.js');
 
 const { esc, send, sendText, redirect, readForm, field, page, icon, msg } = W;
 
-const TOPICS = {
-  ancora: "Àncòra — plugin per l'eredità",
-  easyheirs: 'Easy Heirs',
-  schei: 'Schèi wallet',
-  corsi: 'Corsi ed eventi',
-  altro: 'Altro',
-};
-const { EMAIL_RE } = require('./rules.js'); // solo caratteri semplici: l'indirizzo va nelle intestazioni dell'email
+// argomenti: li sceglie il gestore nelle impostazioni (lib/rules.js, topicsOf)
+const { EMAIL_RE, topicsOf } = require('./rules.js'); // EMAIL_RE: solo caratteri semplici, l'indirizzo va nelle intestazioni dell'email
 const MAX_BODY = 5000;
 const MAX_MESSAGES = 200; // per ticket: oltre, il cliente apre un ticket nuovo (niente disco riempito)
 const KEEP_DAYS = 30; // giorni dopo la chiusura, poi il ticket si cancella (D3)
@@ -61,7 +55,8 @@ module.exports = function makePublic({ store, minFormMs = 3000, publicUrl = '', 
 
   /* ---------- pagine ---------- */
   function homePage(v = {}, err = '') {
-    const opts = Object.entries(TOPICS).map(([k, l]) => `<option value="${k}"${v.topic === k ? ' selected' : ''}>${esc(l)}</option>`).join('');
+    // il valore di ogni scelta è il nome stesso: se il gestore cambia l'ordine mentre il modulo è aperto, l'argomento resta giusto
+    const opts = topicsOf(getSetting).map((l) => `<option value="${esc(l)}"${v.topic === l ? ' selected' : ''}>${esc(l)}</option>`).join('');
     return page('Apri un ticket', `<h1>Apri un ticket</h1>
       <p class="sub">Scrivici qui. Il tuo messaggio resta sul server di SAFE21: non passa per una casella di posta.</p>
       ${err ? msg('err', esc(err)) : ''}
@@ -89,6 +84,7 @@ module.exports = function makePublic({ store, minFormMs = 3000, publicUrl = '', 
     return page('Ticket aperto', `<h1>Ticket aperto</h1>
       <div class="num">${ticketNumber(t.number)}</div>
       <p class="sub">Ti abbiamo mandato un'email con il link. Puoi anche salvarlo adesso: è la chiave del tuo ticket, non condividerlo.</p>
+      ${msg('warn', "Non trovi l'email? Guarda anche nella cartella <b>Spam</b> o <b>Promozioni</b>.")}
       <input id="link" class="linkbox" readonly value="${esc(link)}" aria-label="Link privato del ticket">
       <div class="btns">
         <a class="btn" href="/t/${esc(token)}">${icon('ticket')}Apri il tuo ticket</a>
@@ -185,7 +181,7 @@ module.exports = function makePublic({ store, minFormMs = 3000, publicUrl = '', 
         || (!v.name ? 'Scrivi il tuo nome.' : '')
         || (v.name.length > 80 ? 'Il nome è troppo lungo (massimo 80 caratteri).' : '')
         || (v.email.length > 200 || !EMAIL_RE.test(v.email) ? "Controlla l'indirizzo email." : '')
-        || (!TOPICS[v.topic] ? "Scegli l'argomento." : '')
+        || (!topicsOf(getSetting).includes(v.topic) ? "Scegli l'argomento." : '')
         || (v.body.length < 10 ? 'Il messaggio è troppo corto.' : '')
         || (v.body.length > MAX_BODY ? `Il messaggio è troppo lungo (massimo ${MAX_BODY} caratteri).` : '');
       if (bad) return send(res, 400, homePage(v, bad));
@@ -200,11 +196,11 @@ module.exports = function makePublic({ store, minFormMs = 3000, publicUrl = '', 
         console.error('sportello: raggiunto il tetto giornaliero di ticket nuovi');
         return send(res, 429, homePage(v, 'Lo sportello oggi ha ricevuto troppe richieste. Riprova domani.'));
       }
-      const { ticket, token } = store.createTicket({ name: v.name, email: v.email, topic: TOPICS[v.topic], body: v.body });
+      const { ticket, token } = store.createTicket({ name: v.name, email: v.email, topic: v.topic, body: v.body });
       // un solo avviso «ticket aperto» al giorno per indirizzo: chi apre ticket con l'email di un altro
       // non può riempirgli la casella (il link resta comunque sulla pagina di conferma)
       if (G.rateLimit('mail:opened:' + v.email.toLowerCase(), 1, DAY)) store.queueMail(ticket.id, v.email, 'opened', linkOf(token));
-      notifyOwner(`\u{1F4E9} Nuovo ticket ${ticketNumber(ticket.number)} — ${TOPICS[v.topic]}`);
+      notifyOwner(`\u{1F4E9} Nuovo ticket ${ticketNumber(ticket.number)} — ${v.topic}`);
       return send(res, 200, confirmPage(ticket, token), { 'Content-Security-Policy': COPY_CSP });
     }
 
@@ -270,5 +266,3 @@ module.exports = function makePublic({ store, minFormMs = 3000, publicUrl = '', 
     return send(res, 404, page('Non trovato', '<h1>Pagina non trovata</h1><p><a href="/">Torna allo sportello</a></p>'));
   };
 };
-
-module.exports.TOPICS = TOPICS;

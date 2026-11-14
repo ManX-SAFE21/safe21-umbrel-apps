@@ -12,7 +12,7 @@ const { openDb } = require('./lib/db.js');
 const G = require('./lib/guard.js');
 const W = require('./lib/web.js');
 
-const VERSION = '0.5.1';
+const VERSION = '0.5.2';
 const PUBLIC_PORT = Number(process.env.PUBLIC_PORT || 3000);
 const ADMIN_PORT = Number(process.env.ADMIN_PORT || 3001);
 const DATA_DIR = process.env.DATA_DIR || '/data';

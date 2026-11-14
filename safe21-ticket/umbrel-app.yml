@@ -3,7 +3,7 @@ id: safe21-ticket
 category: automation
 name: Sportello Ticket
 icon: https://raw.githubusercontent.com/ManX-SAFE21/safe21-umbrel-apps/main/safe21-ticket/icon.svg
-version: "0.6.1"
+version: "0.6.2"
 tagline: Assistenza SAFE21, con i messaggi solo sul tuo Umbrel
 description: >-
   Sportello di assistenza per i clienti di SAFE21. I clienti aprono un ticket
@@ -21,6 +21,6 @@ gallery: []
 path: ""
 defaultUsername: ""
 defaultPassword: ""
-releaseNotes: "0.6.1: dal sito safe21.io lo sportello si apre con lo stesso tema (chiaro o scuro) scelto sul sito, e lo ricorda. 0.6.0: pannello raggiungibile anche da fuori casa, su un indirizzo protetto da Cloudflare Access (codice via email) piu la password del pannello; l'app controlla la firma di Cloudflare su ogni richiesta. Finche non lo attivi nelle Impostazioni (dall'icona di Umbrel) da fuori resta chiuso. Per passare a una nuova versione usa sempre Aggiorna: disinstallare l'app cancella tutti i ticket."
+releaseNotes: "0.6.2: il pannello e sempre scuro. 0.6.1: dal sito safe21.io lo sportello si apre con lo stesso tema (chiaro o scuro) scelto sul sito, e lo ricorda. 0.6.0: pannello raggiungibile anche da fuori casa, su un indirizzo protetto da Cloudflare Access (codice via email) piu la password del pannello; l'app controlla la firma di Cloudflare su ogni richiesta. Finche non lo attivi nelle Impostazioni (dall'icona di Umbrel) da fuori resta chiuso. Per passare a una nuova versione usa sempre Aggiorna: disinstallare l'app cancella tutti i ticket."
 submitter: SAFE21
 submission: ""

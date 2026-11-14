@@ -12,7 +12,7 @@ const { openDb } = require('./lib/db.js');
 const G = require('./lib/guard.js');
 const W = require('./lib/web.js');
 
-const VERSION = '0.6.1';
+const VERSION = '0.6.2';
 const PUBLIC_PORT = Number(process.env.PUBLIC_PORT || 3000);
 const ADMIN_PORT = Number(process.env.ADMIN_PORT || 3001);
 const DATA_DIR = process.env.DATA_DIR || '/data';
@@ -166,7 +166,9 @@ process.on('uncaughtException', (e) => console.error('errore non gestito:', e));
 process.on('unhandledRejection', (e) => console.error('errore non gestito:', e));
 
 const pub = http.createServer(wrap(handlePublic));
-const adm = http.createServer(wrap(handleAdmin));
+// il pannello è sempre scuro, qualunque tema abbia il telefono o il computer (anche la pagina d'errore)
+const admin = wrap(handleAdmin);
+const adm = http.createServer((req, res) => W.themeCtx.run('dark', () => admin(req, res)));
 for (const s of [pub, adm]) {
   s.headersTimeout = 15000; s.requestTimeout = 20000;
   // porta già occupata o altro problema all'avvio: meglio fermarsi (Docker riavvia l'app) che restare mezzi accesi

@@ -1,0 +1,37 @@
+version: "3.7"
+
+services:
+  # L'icona di Umbrel apre il PANNELLO (porta 3001), dietro il login di Umbrel.
+  app_proxy:
+    environment:
+      APP_HOST: safe21-welist_web_1
+      APP_PORT: 3001
+      PROXY_AUTH_ADD: "true"
+
+  web:
+    # node:22-alpine bloccata sulla sua impronta (la stessa dell'app ticket)
+    image: node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a
+    restart: on-failure
+    user: "1000:1000"
+    working_dir: /app
+    command: ["node", "--no-warnings", "/app/server.js"]
+    environment:
+      PORT: 3000
+      ADMIN_PORT: 3001
+      DATA_DIR: /data
+      WELIST_PAYMENT: core
+      TRUST_PROXY: 1
+      # Bitcoin Core dell'app "bitcoin" di Umbrel. Variabili viste in safe21-will-executor.
+      BITCOIN_RPC_URL: http://$APP_BITCOIN_NODE_IP:$APP_BITCOIN_RPC_PORT
+      # Accesso con il file cookie (montato sotto, sola lettura): nessuna password nell'app.
+      BITCOIN_RPC_COOKIE: /bitcoin-data/.cookie
+      # Alternativa SE il cookie non fosse leggibile (NON verificata, da Umbrel):
+      #   BITCOIN_RPC_USER: $APP_BITCOIN_RPC_USER
+      #   BITCOIN_RPC_PASS: $APP_BITCOIN_RPC_PASS
+    volumes:
+      - ${APP_DATA_DIR}/app:/app:ro
+      - ${APP_DATA_DIR}/data:/data
+      - ${APP_BITCOIN_DATA_DIR}:/bitcoin-data:ro
+    # Nessuna porta aperta sulla rete di casa:
+    # - pagina PUBBLICA: solo dal tunnel Cloudflare -> http://safe21-welist_web_1:3000
+    # - PANNELLO: solo dall'icona di Umbrel (porta 9171). Mai puntare il tunnel sulla 3001.

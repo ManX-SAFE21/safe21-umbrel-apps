@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lista Will Executor</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/app.js" defer></script>
+</head>
+<body>
+<div class="banner hide" id="banner" data-i18n="banner"></div>
+<div class="wrap">
+<header>
+  <div class="mark" aria-hidden="true"></div>
+  <h1 data-i18n="title"></h1>
+  <div class="lang" role="group" aria-label="Language">
+    <button id="l-it" class="on" type="button">IT</button><button id="l-en" type="button">EN</button>
+  </div>
+</header>
+<nav class="tabs" role="tablist">
+  <button type="button" data-view="list" class="on" data-i18n="tab1"></button>
+  <button type="button" data-view="reg" data-i18n="tab2"></button>
+</nav>
+
+<section id="v-list" class="view on">
+  <p class="muted" data-i18n="listIntro"></p>
+  <div class="card sig">
+    <div>
+      <div><strong data-i18n="signedNote"></strong></div>
+      <div class="muted"><span data-i18n="fp"></span> <code id="fpr">…</code></div>
+    </div>
+    <div class="links">
+      <a class="btn sec" href="/list.json" download="list.json" data-i18n="dl"></a>
+      <a class="btn sec sm" href="/list.json.sig" download="list.json.sig" data-i18n="dlSig"></a>
+      <a class="btn sec sm" href="/pubkey.pem" download="pubkey.pem" data-i18n="dlKey"></a>
+    </div>
+  </div>
+  <div class="toolbar">
+    <div><label for="netf" data-i18n="filter"></label>
+      <select id="netf"><option value="all" data-i18n="all"></option><option value="bitcoin">bitcoin</option><option value="testnet4">testnet4</option></select></div>
+    <div class="muted" id="count"></div>
+  </div>
+  <div class="err hide" id="listErr" data-i18n="listErr"></div>
+  <table>
+    <thead><tr id="h-list"></tr></thead>
+    <tbody id="b-list"></tbody>
+  </table>
+</section>
+
+<section id="v-reg" class="view">
+  <div class="note" data-i18n="noNeed"></div>
+  <div class="steps" id="steps"></div>
+
+  <div id="s1" class="card">
+    <h2 data-i18n="s1t"></h2>
+    <div class="row">
+      <div class="grow"><label for="url" data-i18n="s1l"></label>
+        <input type="text" id="url" placeholder="https://" autocomplete="off" spellcheck="false" maxlength="256"></div>
+      <div class="chain"><label for="chain" data-i18n="kNet"></label>
+        <select id="chain"><option value="bitcoin">bitcoin</option><option value="testnet4">testnet4</option></select></div>
+      <button type="button" class="btn" id="check" data-i18n="check"></button>
+    </div>
+    <p class="muted" data-i18n="s1h"></p>
+    <div class="err hide" id="s1err"></div>
+  </div>
+
+  <div id="s2" class="card hide">
+    <h2 data-i18n="s2t"></h2>
+    <p class="muted" data-i18n="s2p"></p>
+    <ul class="checks" id="chk"></ul>
+    <p class="muted" id="offer"></p>
+    <div class="err hide" id="s2err"></div>
+    <div class="row"><button type="button" class="btn" id="to3" data-i18n="proceed"></button>
+    <button type="button" class="btn sec" id="back1" data-i18n="back"></button></div>
+  </div>
+
+  <div id="s3" class="card hide">
+    <h2 data-i18n="s3t"></h2>
+    <div id="payBlock">
+      <label data-i18n="payAddr"></label>
+      <div class="addrbox"><code id="payaddr"></code>
+        <button type="button" class="btn sec sm" id="copy" data-i18n="copy"></button>
+        <a class="btn sec sm" id="walletLink" href="#" data-i18n="openWallet"></a></div>
+    </div>
+    <ul class="checks">
+      <li><span class="k" data-i18n="amount"></span><strong class="v" id="amountv"></strong></li>
+      <li><span class="k" data-i18n="period"></span><strong class="v" id="periodv"></strong></li>
+      <li><span class="k" data-i18n="forExec"></span><span class="v mono" id="forv"></span></li>
+      <li id="creditRow" class="hide"><span class="k" data-i18n="credit"></span><span class="v" id="creditv"></span></li>
+    </ul>
+    <div class="status" id="paystat"></div>
+    <p class="muted" id="renewNote" data-i18n="renew"></p>
+    <p class="muted small"><span data-i18n="keepLink"></span> <a id="selfLink" href="#"></a></p>
+  </div>
+</section>
+</div>
+</body>
+</html>

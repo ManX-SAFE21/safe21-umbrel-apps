@@ -1,0 +1,27 @@
+manifestVersion: 1
+id: safe21-welist
+category: bitcoin
+name: Lista Will Executor
+icon: https://raw.githubusercontent.com/ManX-SAFE21/safe21-umbrel-apps/main/safe21-welist/icon.svg
+version: "0.1.0"
+tagline: Elenco pubblico dei Will Executor Bitcoin
+description: >-
+  Elenco pubblico dei Will Executor Bitcoin. Gli operatori si iscrivono dalla
+  pagina pubblica (raggiungibile con un tunnel Cloudflare), il pagamento
+  dell'iscrizione e controllato dal tuo nodo Bitcoin con un wallet solo
+  osservazione (nessuna chiave privata). L'icona dell'app apre il pannello,
+  protetto dal login di Umbrel e dalla password del pannello.
+developer: SAFE21
+website: https://safe21.io
+dependencies:
+  - bitcoin
+repo: ""
+support: ""
+port: 9171
+gallery: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+releaseNotes: "0.1.0: prima versione."
+submitter: SAFE21
+submission: ""
